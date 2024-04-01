@@ -1,0 +1,40 @@
+---
+- name: Clone web-rust-api repository and execute docker-compose
+  hosts: all
+  become: true
+  vars:
+    repository_url: "https://github.com/FabioArias0/web-rust-api"
+  tasks:
+    - name: Check if git is installed
+      ansible.builtin.command: git --version
+      register: git_check
+      ignore_errors: yes
+
+    - name: Install git if not installed
+      ansible.builtin.package:
+        name: git
+        state: present
+      when: git_check.rc != 0
+    
+    - name: Clone web-rust-api repository
+      ansible.builtin.git:
+        repo: "{{ repository_url }}"
+        dest: /path/to/web-rust-api
+        clone: yes
+        update: yes
+
+    - name: Execute docker-compose
+      ansible.builtin.command: docker-compose up -d
+      args:
+        chdir: /path/to/clone/web-rust-api
+    
+    - name: Commit changes to main branch
+      git_acp:
+        user: FabioArias0
+        token: AWS-ubuntu-deployment
+        path: /path/to/clone/web-rust-api
+        branch: master
+        comment: "Successfully connected and executed the app on {{ ansible_hostname }}."
+        add: [ "." ]
+        mode: https
+        url: "https://github.com/FabioArias0/web-rust-api"
